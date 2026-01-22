@@ -1,2 +1,6 @@
 packages:
- - "plugins/*"
+  - plugins/*
+
+ignoredBuiltDependencies:
+  - electron
+  - esbuild

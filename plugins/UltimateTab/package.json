@@ -1,0 +1,11 @@
+{
+	"name": "UltimateTab",
+	"description": "Try to display ultimate guitar tabs",
+	"homepage": "https://github.com/Ceebox/luna-plugins",
+	"author": {
+		"name": "Chadderbox",
+		"url": "https://github.com/Ceebox",
+		"avatarUrl": ""
+	},
+	"exports": "./src/index.ts"
+}
