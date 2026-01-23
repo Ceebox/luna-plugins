@@ -1,6 +1,7 @@
 import { LunaUnload } from "@luna/core";
 import { MediaItem } from "@luna/lib";
 import { settings, Settings } from "./Settings";
+import { fetchTabContent } from "./utils";
 
 export { Settings };
 export const unloads = new Set<LunaUnload>();
@@ -186,29 +187,13 @@ const showTabs = async () => {
         }, 100);
     }
 
-    const query = encodeURIComponent(`${artist} ${title}`);
     try {
-        const res = await fetch(`https://www.ultimate-guitar.com/search.php?search_type=title&value=${query}`);
-        const html = await res.text();
-        const storeMatch = html.match(/class="js-store" data-content="([^"]+)"/);
-        if (storeMatch) {
-            const data = JSON.parse(safeDecode(storeMatch[1]));
-            const results = data?.store?.page?.data?.results;
-            const match = results?.find((r: any) => r.type === "Chords" || r.type === "Tabs") || results?.[0];
-            if (match?.tab_url) {
-                const tabRes = await fetch(match.tab_url);
-                const tabHtml = await tabRes.text();
-                const tabStoreMatch = tabHtml.match(/class="js-store" data-content="([^"]+)"/);
-                const tabData = JSON.parse(safeDecode(tabStoreMatch[1]));
-                const rawContent = tabData?.store?.page?.data?.tab_view?.wiki_tab?.content;
-                const finalContent = rawContent ? decodeHTML(rawContent.replace(/\[\/?tab\]/g, "").replace(/\[\/?ch\]/g, "")) : "Empty tab.";
-                const textEl = document.getElementById("ut-content");
-                if (textEl) {
-                    textEl.textContent = finalContent;
-                }
-            }
+        const finalContent = await fetchTabContent(artist, title);
+        const textEl = document.getElementById("ut-content");
+        if (textEl) {
+            textEl.textContent = finalContent;
         }
-    } catch {
+    } catch (e) {
         const textEl = document.getElementById("ut-content");
         if (textEl) {
             textEl.textContent = "Failed to load tabs.";
