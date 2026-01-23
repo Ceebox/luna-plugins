@@ -79,27 +79,6 @@ styles.innerHTML = `
 document.head.appendChild(styles);
 unloads.add(() => styles.remove());
 
-const decodeHTML = (html: string) => {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = html;
-    return txt.value;
-};
-
-const safeDecode = (str: string) => {
-    try {
-        const decodedHtml = str
-            .replace(/&quot;/g, '"')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&#039;/g, "'");
-        return decodeURIComponent(decodedHtml.replace(/%(?![0-9a-fA-F]{2})/g, "%25"));
-    } catch {
-        // We tried our best
-        return str;
-    }
-};
-
 const closeTabs = (isPopState = false) => {
     const tabView = document.getElementById("ut-view-container");
     if (tabView) {
