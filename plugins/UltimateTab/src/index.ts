@@ -10,6 +10,7 @@ export const unloads = new Set<LunaUnload>();
 let scrollInterval: number | null = null;
 let lastTrackId: string | null = null;
 let debounceTimeout: number | null = null;
+let autoScroll = settings.autoScroll;
 
 const VIEW_STATE = "ultimate-tabs-open";
 
@@ -87,9 +88,11 @@ const showTabs = async () => {
                     <div id="ut-header-artist" style="color: #888;"></div>
                 </div>
                 <div class="ut-controls">
-                    <button class="ut-toggle-scroll ${settings.autoScroll ? '' : 'off'}" id="ut-scroll-toggle">
-                        AUTO-SCROLL: ${settings.autoScroll ? 'ON' : 'OFF'}
-                    </button>
+                    ${settings.autoScroll ?
+                        `<button class="ut-toggle-scroll ${autoScroll ? '' : 'off'}" id="ut-scroll-toggle">
+                        AUTO-SCROLL: ${autoScroll ? 'ON' : 'OFF'}
+                        </button>` : ''
+                    }
                     <button class="ut-close" id="ut-close">CLOSE</button>
                 </div>
             </div>
@@ -102,11 +105,13 @@ const showTabs = async () => {
         };
         
         const scrollToggle = document.getElementById("ut-scroll-toggle")!;
-        scrollToggle.onclick = () => {
-            settings.autoScroll = !settings.autoScroll;
-            scrollToggle.innerText = `AUTO-SCROLL: ${settings.autoScroll ? 'ON' : 'OFF'}`;
-            scrollToggle.classList.toggle('off', !settings.autoScroll);
-        };
+        if (scrollToggle) {
+            scrollToggle.onclick = () => {
+                autoScroll = !autoScroll;
+                scrollToggle.innerText = `AUTO-SCROLL: ${autoScroll ? 'ON' : 'OFF'}`;
+                scrollToggle.classList.toggle('off', !autoScroll);
+            };
+        }
 
         if (!scrollInterval) {
             scrollInterval = window.setInterval(() => {
