@@ -1,5 +1,5 @@
 import { LunaUnload } from "@luna/core";
-import { MediaItem } from "@luna/lib";
+import { MediaItem, PlayState, redux } from "@luna/lib";
 import { settings, Settings } from "./Settings";
 import { fetchTabContent } from "./utils";
 import { style } from "./style";
@@ -110,24 +110,26 @@ const showTabs = async () => {
 
         if (!scrollInterval) {
             scrollInterval = window.setInterval(() => {
-                if (!settings.autoScroll) {
+                if (!settings.autoScroll || !PlayState.playing) {
                     return;
                 }
 
                 const content = document.getElementById("ut-content");
-                const luna = (window as any).luna;
-                if (!content || !luna?.redux?.store) {
+                if (!content) {
                     return;
                 }
 
-                const state = luna.redux.store.getState();
-                const progress = state.playbackControls?.playbackProgress;
-                const duration = state.playbackControls?.duration;
+                const state = redux.store.getState();
+                const progress = state.playbackControls?.latestCurrentTime;
+                const duration = mediaItem.duration;
 
-                if (progress && duration) {
+                if (typeof progress === "number" && typeof duration === "number" && duration > 0) {
                     const percentage = progress / duration;
-                    const totalHeight = content.scrollHeight - (content.clientHeight + 400);
-                    content.scrollTop = (totalHeight * percentage) - 150;
+                    const maxScroll = content.scrollHeight - content.clientHeight;
+                    
+                    if (maxScroll > 0) {
+                        content.scrollTop = maxScroll * percentage;
+                    }
                 }
             }, 100);
         }

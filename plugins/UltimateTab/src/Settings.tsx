@@ -4,16 +4,15 @@ import React from "react";
 
 export const settings = await ReactiveStore.getPluginStorage("UltimateTab", {
     enabled: true,
-    autoScroll: true,
     autoRefresh: true,
+    autoScroll: false,
 });
 
 export const Settings = () => {
     const [enabled, setEnabled] = React.useState(settings.enabled);
-    const [autoScroll, setAutoScroll] = React.useState(settings.autoScroll);
     const [autoRefresh, setAutoRefresh] = React.useState(settings.autoRefresh);
+    const [autoScroll, setAutoScroll] = React.useState(settings.autoScroll);
 
-    // TODO: Make auto-scroll work
     return (
         <LunaSettings>
             <LunaSwitchSetting
@@ -26,21 +25,21 @@ export const Settings = () => {
                 }}
             />
             <LunaSwitchSetting
-                title="Auto-scroll"
-                desc="Automatically scroll tabs based on song progress"
-                checked={autoScroll}
-                onChange={(_: any, checked: boolean) => {
-                    setAutoScroll(checked);
-                    settings.autoScroll = checked;
-                }}
-            />
-            <LunaSwitchSetting
                 title="Automatically refresh"
                 desc="Refresh tabs when the song changes"
                 checked={autoRefresh}
                 onChange={(_: any, checked: boolean) => {
                     setAutoRefresh(checked);
                     settings.autoRefresh = checked;
+                }}
+            />
+            <LunaSwitchSetting
+                title="Auto-scroll"
+                desc="Automatically scroll tabs based on song progress"
+                checked={autoScroll}
+                onChange={(_: any, checked: boolean) => {
+                    setAutoScroll(checked);
+                    settings.autoScroll = checked;
                 }}
             />
         </LunaSettings>
