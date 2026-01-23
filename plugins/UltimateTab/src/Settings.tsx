@@ -5,11 +5,13 @@ import React from "react";
 export const settings = await ReactiveStore.getPluginStorage("UltimateTab", {
     enabled: true,
     autoScroll: true,
+    autoRefresh: true,
 });
 
 export const Settings = () => {
     const [enabled, setEnabled] = React.useState(settings.enabled);
     const [autoScroll, setAutoScroll] = React.useState(settings.autoScroll);
+    const [autoRefresh, setAutoRefresh] = React.useState(settings.autoRefresh);
 
     // TODO: Make auto-scroll work
     return (
@@ -30,6 +32,15 @@ export const Settings = () => {
                 onChange={(_: any, checked: boolean) => {
                     setAutoScroll(checked);
                     settings.autoScroll = checked;
+                }}
+            />
+            <LunaSwitchSetting
+                title="Automatically refresh"
+                desc="Refresh tabs when the song changes"
+                checked={autoRefresh}
+                onChange={(_: any, checked: boolean) => {
+                    setAutoRefresh(checked);
+                    settings.autoRefresh = checked;
                 }}
             />
         </LunaSettings>

@@ -12,7 +12,6 @@ let lastTrackId: string | null = null;
 let debounceTimeout: number | null = null;
 
 const VIEW_STATE = "ultimate-tabs-open";
-const CHANGE_ON_REFRESH = true;
 
 const styles = document.createElement("style");
 styles.innerHTML = style;
@@ -149,7 +148,7 @@ const inject = async () => {
     const mediaItem = await MediaItem.fromPlaybackContext();
     const currentTrackId = mediaItem ? `${await mediaItem.artist()}-${await mediaItem.title()}` : null;
 
-    if (CHANGE_ON_REFRESH && currentTrackId !== lastTrackId) {
+    if (settings.autoRefresh && currentTrackId !== lastTrackId) {
         lastTrackId = currentTrackId;
 
         if (debounceTimeout) {
