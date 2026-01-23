@@ -123,10 +123,14 @@ unloads.add(() => window.removeEventListener("popstate", handlePopState));
 
 const showTabs = async () => {
     const main = document.querySelector(".mainContent") as HTMLElement;
-    if (!main || document.getElementById("ut-view-container")) return;
+    if (!main || document.getElementById("ut-view-container")) {
+        return;
+    }
 
     const mediaItem = await MediaItem.fromPlaybackContext();
-    if (!mediaItem) return;
+    if (!mediaItem) {
+        return;
+    }
 
     const title = await mediaItem.title();
     const artist = (await mediaItem.artist())?.name ?? "Unknown Artist";
