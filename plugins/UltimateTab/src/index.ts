@@ -8,12 +8,18 @@ export { Settings };
 export const unloads = new Set<LunaUnload>();
 
 let scrollInterval: number | null = null;
+let lastTrackId: string | null = null;
+let debounceTimeout: number | null = null;
+
 const VIEW_STATE = "ultimate-tabs-open";
+const CHANGE_ON_REFRESH = true;
 
 const styles = document.createElement("style");
 styles.innerHTML = style;
 document.head.appendChild(styles);
-unloads.add(() => styles.remove());
+unloads.add(() => {
+    styles.remove();
+});
 
 const closeTabs = (isPopState = false) => {
     const tabView = document.getElementById("ut-view-container");
@@ -26,7 +32,6 @@ const closeTabs = (isPopState = false) => {
 };
 
 const handlePopState = (event: PopStateEvent) => {
-    // Go back if the we hit the back button (duh)
     const tabView = document.getElementById("ut-view-container");
     if (tabView) {
         closeTabs(true);
@@ -34,11 +39,30 @@ const handlePopState = (event: PopStateEvent) => {
 };
 
 window.addEventListener("popstate", handlePopState);
-unloads.add(() => window.removeEventListener("popstate", handlePopState));
+unloads.add(() => {
+    window.removeEventListener("popstate", handlePopState);
+});
+
+const updateTabContent = async (artist: string, title: string) => {
+    const textEl = document.getElementById("ut-content");
+    if (!textEl) {
+        return;
+    }
+
+    textEl.textContent = "Searching Ultimate Guitar...";
+    textEl.scrollTop = 0;
+
+    try {
+        const finalContent = await fetchTabContent(artist, title);
+        textEl.textContent = finalContent;
+    } catch (e) {
+        textEl.textContent = "Failed to load tabs.";
+    }
+};
 
 const showTabs = async () => {
     const main = document.querySelector(".mainContent") as HTMLElement;
-    if (!main || document.getElementById("ut-view-container")) {
+    if (!main) {
         return;
     }
 
@@ -50,81 +74,108 @@ const showTabs = async () => {
     const title = await mediaItem.title();
     const artist = (await mediaItem.artist())?.name ?? "Unknown Artist";
 
-    // Push a dummy state so the 'back' button triggers popstate instead of leaving the page
-    window.history.pushState(VIEW_STATE, "");
+    let utView = document.getElementById("ut-view-container");
 
-    const utView = document.createElement("div");
-    utView.id = "ut-view-container";
-    utView.className = "ut-view-container";
-    utView.innerHTML = `
-        <div class="ut-header">
-            <div>
-                <div style="font-size: 24px; font-weight: bold;">${title}</div>
-                <div style="color: #888;">${artist}</div>
+    if (!utView) {
+        window.history.pushState(VIEW_STATE, "");
+        utView = document.createElement("div");
+        utView.id = "ut-view-container";
+        utView.className = "ut-view-container";
+        utView.innerHTML = `
+            <div class="ut-header">
+                <div>
+                    <div id="ut-header-title" style="font-size: 24px; font-weight: bold;"></div>
+                    <div id="ut-header-artist" style="color: #888;"></div>
+                </div>
+                <div class="ut-controls">
+                    <button class="ut-toggle-scroll ${settings.autoScroll ? '' : 'off'}" id="ut-scroll-toggle">
+                        AUTO-SCROLL: ${settings.autoScroll ? 'ON' : 'OFF'}
+                    </button>
+                    <button class="ut-close" id="ut-close">CLOSE</button>
+                </div>
             </div>
-            <div class="ut-controls">
-                <button class="ut-toggle-scroll ${settings.autoScroll ? '' : 'off'}" id="ut-scroll-toggle">
-                    AUTO-SCROLL: ${settings.autoScroll ? 'ON' : 'OFF'}
-                </button>
-                <button class="ut-close" id="ut-close">CLOSE</button>
-            </div>
-        </div>
-        <pre class="ut-content" id="ut-content">Searching Ultimate Guitar...</pre>
-    `;
+            <pre class="ut-content" id="ut-content"></pre>
+        `;
+        main.appendChild(utView);
 
-    main.appendChild(utView);
-    document.getElementById("ut-close")!.onclick = () => closeTabs(false);
-    
-    const scrollToggle = document.getElementById("ut-scroll-toggle")!;
-    scrollToggle.onclick = () => {
-        settings.autoScroll = !settings.autoScroll;
-        scrollToggle.innerText = `AUTO-SCROLL: ${settings.autoScroll ? 'ON' : 'OFF'}`;
-        scrollToggle.classList.toggle('off', !settings.autoScroll);
-    };
+        document.getElementById("ut-close")!.onclick = () => {
+            closeTabs(false);
+        };
+        
+        const scrollToggle = document.getElementById("ut-scroll-toggle")!;
+        scrollToggle.onclick = () => {
+            settings.autoScroll = !settings.autoScroll;
+            scrollToggle.innerText = `AUTO-SCROLL: ${settings.autoScroll ? 'ON' : 'OFF'}`;
+            scrollToggle.classList.toggle('off', !settings.autoScroll);
+        };
 
-    if (!scrollInterval) {
-        scrollInterval = window.setInterval(() => {
-            if (!settings.autoScroll) {
-                return;
-            }
+        if (!scrollInterval) {
+            scrollInterval = window.setInterval(() => {
+                if (!settings.autoScroll) {
+                    return;
+                }
+                const content = document.getElementById("ut-content");
+                const luna = (window as any).luna;
+                if (!content || !luna?.redux?.store) {
+                    return;
+                }
 
-            const content = document.getElementById("ut-content");
-            const luna = (window as any).luna;
-            if (!content || !luna?.redux?.store) {
-                return;
-            }
+                const state = luna.redux.store.getState();
+                const progress = state.playbackControls?.playbackProgress;
+                const duration = state.playbackControls?.duration;
 
-            const state = luna.redux.store.getState();
-            const progress = state.playbackControls?.playbackProgress;
-            const duration = state.playbackControls?.duration;
-
-            if (progress && duration) {
-                const percentage = progress / duration;
-                const totalHeight = content.scrollHeight - (content.clientHeight + 400);
-                content.scrollTop = (totalHeight * percentage) - 150;
-            }
-        }, 100);
-    }
-
-    try {
-        const finalContent = await fetchTabContent(artist, title);
-        const textEl = document.getElementById("ut-content");
-        if (textEl) {
-            textEl.textContent = finalContent;
-        }
-    } catch (e) {
-        const textEl = document.getElementById("ut-content");
-        if (textEl) {
-            textEl.textContent = "Failed to load tabs.";
+                if (progress && duration) {
+                    const percentage = progress / duration;
+                    const totalHeight = content.scrollHeight - (content.clientHeight + 400);
+                    content.scrollTop = (totalHeight * percentage) - 150;
+                }
+            }, 100);
         }
     }
+
+    document.getElementById("ut-header-title")!.textContent = title;
+    document.getElementById("ut-header-artist")!.textContent = artist;
+
+    await updateTabContent(artist, title);
 };
 
-const inject = () => {
+const inject = async () => {
     if (!settings.enabled) {
         document.getElementById("ut-btn")?.remove();
         return;
     }
+
+    const mediaItem = await MediaItem.fromPlaybackContext();
+    const currentTrackId = mediaItem ? `${await mediaItem.artist()}-${await mediaItem.title()}` : null;
+
+    if (CHANGE_ON_REFRESH && currentTrackId !== lastTrackId) {
+        lastTrackId = currentTrackId;
+
+        if (debounceTimeout) {
+            clearTimeout(debounceTimeout);
+        }
+
+        debounceTimeout = window.setTimeout(async () => {
+            const tabView = document.getElementById("ut-view-container");
+            if (tabView && mediaItem) {
+                const title = await mediaItem.title();
+                const artist = (await mediaItem.artist())?.name ?? "Unknown Artist";
+                
+                const titleEl = document.getElementById("ut-header-title");
+                const artistEl = document.getElementById("ut-header-artist");
+                
+                if (titleEl) {
+                    titleEl.textContent = title;
+                }
+                if (artistEl) {
+                    artistEl.textContent = artist;
+                }
+                
+                updateTabContent(artist, title);
+            }
+        }, 500);
+    }
+
     const container = document.querySelector('[class*="_moreContainer_"]') || document.querySelector('[data-test="footer-player"]');
     if (container && !document.getElementById("ut-btn")) {
         const btn = document.createElement("button");
@@ -139,7 +190,14 @@ const inject = () => {
 const interval = setInterval(inject, 1000);
 unloads.add(() => {
     clearInterval(interval);
-    if (scrollInterval) clearInterval(scrollInterval);
+    if (scrollInterval) {
+        clearInterval(scrollInterval);
+    }
+    
+    if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+    }
+
     closeTabs(false);
     document.getElementById("ut-btn")?.remove();
 });
