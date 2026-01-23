@@ -114,6 +114,7 @@ const showTabs = async () => {
                 if (!settings.autoScroll) {
                     return;
                 }
+
                 const content = document.getElementById("ut-content");
                 const luna = (window as any).luna;
                 if (!content || !luna?.redux?.store) {
@@ -193,7 +194,7 @@ unloads.add(() => {
     if (scrollInterval) {
         clearInterval(scrollInterval);
     }
-    
+
     if (debounceTimeout) {
         clearTimeout(debounceTimeout);
     }
