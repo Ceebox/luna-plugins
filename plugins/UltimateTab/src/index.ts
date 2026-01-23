@@ -54,7 +54,7 @@ const updateTabContent = async (artist: string, title: string) => {
 
     try {
         const finalContent = await fetchTabContent(artist, title);
-        textEl.textContent = finalContent;
+        textEl.innerHTML = finalContent;
     } catch (e) {
         textEl.textContent = "Failed to load tabs.";
     }

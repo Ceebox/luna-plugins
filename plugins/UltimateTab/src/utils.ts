@@ -51,5 +51,10 @@ export const fetchTabContent = async (artist: string, title: string): Promise<st
         return "Empty tab.";
     }
 
-    return decodeHTML(rawContent.replace(/\[\/?tab\]/g, "").replace(/\[\/?ch\]/g, ""));
+    const decodedContent = decodeHTML(rawContent);
+
+    return decodedContent
+        .replace(/\[\/?tab\]/g, "")
+        .replace(/\[ch\]/g, '<span class="ut-chord">')
+        .replace(/\[\/ch\]/g, "</span>");
 };

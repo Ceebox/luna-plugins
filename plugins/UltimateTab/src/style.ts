@@ -66,4 +66,13 @@ export const style = `
         font-weight: bold;
         padding: 0 10px;
     }
+    .ut-chord {
+        background-color: white;
+        color: black;
+        border-radius: 4px;
+        padding: 0 3px;
+        font-weight: bold;
+        /* Optional: helps with alignment if the padding pushes things too far */
+        /* margin: 0 -1px; */ 
+    }
 `
